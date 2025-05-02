@@ -13,7 +13,9 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         // Serialize object references correctly to handle circular references if needed
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+       // options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true; // (optionnel) Pour rendre le JSON lisible
     });
 
 // Register custom services
