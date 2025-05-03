@@ -16,50 +16,44 @@ namespace QS.Controllers
         public FormResultsController(AppDbContext context, ILogger<FormResultsController> logger)
         {
             _context = context;
-            _logger = logger; // Injecter le service de logs
+            _logger = logger;
         }
 
         // POST: api/FormResults
-     [HttpPost]
-public async Task<IActionResult> PostFormResult([FromBody] FormResultDto formResult)
-{
-    if (formResult == null)
-    {
-        return BadRequest("Données invalides");
-    }
+        [HttpPost]
+        public async Task<IActionResult> PostFormResult([FromBody] FormResultDto formResult)
+        {
+            if (formResult == null)
+                return BadRequest("Données invalides");
 
-    if (!_context.Categories.Any(c => c.Id == formResult.Repondant.Categorie))
-    {
-        return BadRequest("Categorie invalide.");
-    }
+            if (!_context.Categories.Any(c => c.Id == formResult.Repondant.Categorie))
+                return BadRequest("Categorie invalide.");
 
-    if (!_context.MedicalServices.Any(s => s.Id == formResult.Service))
-    {
-        return BadRequest("Service invalide.");
-    }
+            if (!_context.MedicalServices.Any(s => s.Id == formResult.Service))
+                return BadRequest("Service invalide.");
 
-    var repondant = new Repondant
-    {
-        Nom = formResult.Repondant.Nom,
-        CategorieId = formResult.Repondant.Categorie,
-        ServiceId = formResult.Service
-    };
+            var repondant = new Repondant
+            {
+                Nom = formResult.Repondant.Nom,
+                CategorieId = formResult.Repondant.Categorie,
+                ServiceId = formResult.Service
+            };
 
-    _context.Repondants.Add(repondant);
-    await _context.SaveChangesAsync();
+            _context.Repondants.Add(repondant);
+            await _context.SaveChangesAsync();
 
-    var formResultEntity = new FormResultEntity
-    {
-        ServiceId = formResult.Service,
-        RepondantId = repondant.Id,
-        Reponses = JsonConvert.SerializeObject(formResult.Reponses)
-    };
+            var formResultEntity = new FormResultEntity
+            {
+                ServiceId = formResult.Service,
+                RepondantId = repondant.Id,
+                Reponses = JsonConvert.SerializeObject(formResult.Reponses)
+            };
 
-    _context.FormResultEntities.Add(formResultEntity);
-    await _context.SaveChangesAsync();
+            _context.FormResultEntities.Add(formResultEntity);
+            await _context.SaveChangesAsync();
 
-    return Ok(new { message = "Formulaire enregistré avec succès ✅" });
-}
+            return Ok(new { message = "Formulaire enregistré avec succès ✅" });
+        }
 
         // GET: api/FormResults
         [HttpGet]
@@ -95,6 +89,29 @@ public async Task<IActionResult> PostFormResult([FromBody] FormResultDto formRes
                 _logger.LogError(ex, "Erreur lors de la récupération des résultats de formulaire.");
                 return StatusCode(500, $"Erreur interne du serveur: {ex.Message}");
             }
+        }
+
+        // DELETE: api/FormResults
+        [HttpDelete]
+        public async Task<IActionResult> DeleteAll()
+        {
+            var allResults = await _context.FormResultEntities.ToListAsync();
+
+            if (allResults.Count == 0)
+                return NoContent();
+
+            // Suppression des répondants liés (facultatif, décommente si tu veux cette logique)
+            var repondantIds = allResults.Select(r => r.RepondantId).ToList();
+            var repondants = await _context.Repondants
+                .Where(r => repondantIds.Contains(r.Id))
+                .ToListAsync();
+
+            _context.FormResultEntities.RemoveRange(allResults);
+            _context.Repondants.RemoveRange(repondants); // facultatif
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Tous les résultats et répondants liés ont été supprimés." });
         }
     }
 }
