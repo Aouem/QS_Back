@@ -36,7 +36,9 @@ namespace QS.Controllers
             {
                 Nom = formResult.Repondant.Nom,
                 CategorieId = formResult.Repondant.Categorie,
-                ServiceId = formResult.Service
+                ServiceId = formResult.Service,
+                 Genre = formResult.Repondant.Genre, // Ajout du genre
+               TrancheAge = formResult.Repondant.TrancheAge  // Assure-toi que la tranche d'âge est envoyée
             };
 
             _context.Repondants.Add(repondant);
@@ -57,39 +59,42 @@ namespace QS.Controllers
 
         // GET: api/FormResults
         [HttpGet]
-        public async Task<IActionResult> GetFormResults()
+public async Task<IActionResult> GetFormResults()
+{
+    try
+    {
+        _logger.LogInformation("Récupération des résultats de formulaire.");
+
+        var results = await _context.FormResultEntities
+            .Include(r => r.Repondant)
+            .ToListAsync();
+
+        var resultDtos = results.Select(r => new
         {
-            try
+            Service = r.ServiceId,
+            Repondant = new
             {
-                _logger.LogInformation("Récupération des résultats de formulaire.");
+                Nom = r.Repondant.Nom,
+                Categorie = r.Repondant.CategorieId,
+                Genre = r.Repondant.Genre, // Ajout du genre
+               TrancheAge = r.Repondant.TrancheAge  // Ajout de la tranche d'âge
+            },
+            Reponses = string.IsNullOrEmpty(r.Reponses)
+                ? new List<ReponseDto>()
+                : JsonConvert.DeserializeObject<List<ReponseDto>>(r.Reponses)
+        }).ToList();
 
-                var results = await _context.FormResultEntities
-                    .Include(r => r.Repondant)
-                    .ToListAsync();
+        _logger.LogInformation("Résultats de formulaire récupérés : {Count} résultats", resultDtos.Count);
 
-                var resultDtos = results.Select(r => new
-                {
-                    Service = r.ServiceId,
-                    Repondant = new
-                    {
-                        Nom = r.Repondant.Nom,
-                        Categorie = r.Repondant.CategorieId
-                    },
-                    Reponses = string.IsNullOrEmpty(r.Reponses)
-                        ? new List<ReponseDto>()
-                        : JsonConvert.DeserializeObject<List<ReponseDto>>(r.Reponses)
-                }).ToList();
+        return Ok(resultDtos);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Erreur lors de la récupération des résultats de formulaire.");
+        return StatusCode(500, $"Erreur interne du serveur: {ex.Message}");
+    }
+}
 
-                _logger.LogInformation("Résultats de formulaire récupérés : {Count} résultats", resultDtos.Count);
-
-                return Ok(resultDtos);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de la récupération des résultats de formulaire.");
-                return StatusCode(500, $"Erreur interne du serveur: {ex.Message}");
-            }
-        }
 
         // DELETE: api/FormResults
         [HttpDelete]

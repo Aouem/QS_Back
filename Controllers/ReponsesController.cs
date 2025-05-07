@@ -16,30 +16,38 @@ namespace QS.Controllers
             _context = context;
             _validator = validator;
         }
-
-        // GET: api/Reponses
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetReponses()
+// GET: api/Reponses
+[HttpGet]
+public async Task<ActionResult<IEnumerable<object>>> GetReponses(string genre = null)
+{
+    var query = _context.Reponses
+        .Include(r => r.Question)
+        .Include(r => r.Repondant)
+        .Select(r => new
         {
-            var reponses = await _context.Reponses
-                .Include(r => r.Question)
-                .Include(r => r.Repondant)
-                .Select(r => new
-                {
-                    r.Id,
-                    r.QuestionId,
-                    QuestionType = r.Question.Type,
-                    r.RepondantId,
-                    RepondantNom = r.Repondant.Nom,
-                    RepondantCategorie = r.Repondant.Categorie,
-                    r.NumericValue,
-                    r.BooleanValue,
-                    r.TextValue
-                })
-                .ToListAsync();
+            r.Id,
+            r.QuestionId,
+            QuestionType = r.Question.Type,
+            r.RepondantId,
+            RepondantNom = r.Repondant.Nom,
+            RepondantCategorie = r.Repondant.Categorie,
+            RepondantGenre = r.Repondant.Genre,  // Ajout du genre
+            r.NumericValue,
+            r.BooleanValue,
+            r.TextValue
+        });
 
-            return Ok(reponses);
-        }
+    // Si un genre est passé, appliquer un filtre
+    if (!string.IsNullOrEmpty(genre))
+    {
+        genre = genre.ToLower();  // rendre le genre insensible à la casse
+        query = query.Where(r => r.RepondantGenre.ToLower() == genre);
+    }
+
+    var reponses = await query.ToListAsync();
+    return Ok(reponses);
+}
+
 
         // GET: api/Reponses/5
         [HttpGet("{id}")]
