@@ -113,5 +113,22 @@ namespace QS.Controllers
 
             return Ok(new { message = "Tous les résultats et répondants liés ont été supprimés." });
         }
+        [HttpDelete("partial-delete")]
+public async Task<IActionResult> DeleteReponsesEtRepondants()
+{
+    // Supprime d'abord les réponses
+    var reponses = await _context.Reponses.ToListAsync();
+    _context.Reponses.RemoveRange(reponses);
+
+    // Supprime ensuite les répondants
+    var repondants = await _context.Repondants.ToListAsync();
+    _context.Repondants.RemoveRange(repondants);
+
+    await _context.SaveChangesAsync();
+
+    return NoContent();
+}
+
     }
+    
 }

@@ -9,7 +9,14 @@ namespace QS.Models
         public int Id { get; set; }
 
         // Propriété nullable pour permettre la suppression avec SetNull
+
         public string? Nom { get; set; }
+
+        public string? Genre { get; set; }
+
+        [MaxLength(50)]
+        public string? TrancheAge { get; set; }
+ 
 
         // Clé étrangère vers Categorie (nullable)
         public int? CategorieId { get; set; }

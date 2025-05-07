@@ -4,7 +4,6 @@ using QS.Models;
 
 namespace QS.Controllers
 {
-    // Route de base pour le contrôleur
     [Route("api/repondants")]
     [ApiController]
     public class RepondantController : ControllerBase
@@ -57,18 +56,25 @@ namespace QS.Controllers
                 return BadRequest("CategorieId invalide.");
             }
 
+            if (repondantDto.Service.HasValue && !_context.MedicalServices.Any(s => s.Id == repondantDto.Service.Value))
+            {
+                return BadRequest("ServiceId invalide.");
+            }
+
             if (repondantDto.Id == 0)
             {
                 var repondant = new Repondant
                 {
                     Nom = repondantDto.Nom,
-                    CategorieId = repondantDto.Categorie
+                    Genre = repondantDto.Genre,
+                    TrancheAge = repondantDto.TrancheAge,
+                    CategorieId = repondantDto.Categorie,
+                    ServiceId = repondantDto.Service
                 };
 
                 _context.Repondants.Add(repondant);
                 await _context.SaveChangesAsync();
 
-                // ✅ Renvoie ici l'objet créé avec son ID
                 return Ok(repondant);
             }
             else
@@ -80,31 +86,32 @@ namespace QS.Controllers
                 }
 
                 repondant.Nom = repondantDto.Nom;
+                repondant.Genre = repondantDto.Genre;
+                repondant.TrancheAge = repondantDto.TrancheAge;
                 repondant.CategorieId = repondantDto.Categorie;
+                repondant.ServiceId = repondantDto.Service;
 
                 await _context.SaveChangesAsync();
 
-                // Optionnel : ici aussi on peut renvoyer l'objet complet
                 return Ok(repondant);
             }
         }
 
-        // PUT: api/MedicalService/repondants/5
-        [HttpPut("repondants/{id}")]
-        public async Task<IActionResult> PutRepondant(int id, Repondant repondant)
+        // PUT: api/repondants/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutRepondant(int id, [FromBody] Repondant repondant)
         {
             if (id != repondant.Id)
             {
                 return BadRequest();
             }
 
-            // Validation des relations
             if (!_context.Categories.Any(c => c.Id == repondant.CategorieId))
             {
                 return BadRequest("CategorieId invalide.");
             }
 
-            if (!_context.MedicalServices.Any(s => s.Id == repondant.ServiceId))
+            if (repondant.ServiceId.HasValue && !_context.MedicalServices.Any(s => s.Id == repondant.ServiceId.Value))
             {
                 return BadRequest("ServiceId invalide.");
             }
@@ -130,8 +137,8 @@ namespace QS.Controllers
             return NoContent();
         }
 
-        // DELETE: api/MedicalService/repondants/5
-        [HttpDelete("repondants/{id}")]
+        // DELETE: api/repondants/5
+        [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRepondant(int id)
         {
             var repondant = await _context.Repondants.FindAsync(id);
